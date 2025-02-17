@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import { Box, TextField, Button, Alert } from "@mui/material";
 import { Comment } from "../types/comment";
 
@@ -9,39 +9,42 @@ interface CommentFormProps {
 }
 
 export default function CommentForm({ onSubmit }: CommentFormProps) {
-  const [author, setAuthor] = React.useState("");
-  const [email, setEmail] = React.useState("");
-  const [text, setText] = React.useState("");
-  const [error, setError] = React.useState<string | null>(null);
+  const [formData, setFormData] = useState({ author: "", email: "", text: "" });
+  const [error, setError] = useState<string | null>(null);
 
-  const validateEmail = (email: string) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-    if (!author.trim() || !email.trim() || !text.trim()) {
-      setError("Пожалуйста, заполните все поля");
-      return;
-    }
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      const { author, email, text } = formData;
 
-    if (!validateEmail(email)) {
-      setError("Пожалуйста, введите корректный email");
-      return;
-    }
+      if (!author || !email || !text) {
+        setError("Пожалуйста, заполните все поля");
+        return;
+      }
 
-    onSubmit({
-      author: author.trim(),
-      email: email.trim(),
-      text: text.trim(),
-    });
+      if (!validateEmail(email)) {
+        setError("Пожалуйста, введите корректный email");
+        return;
+      }
 
-    setAuthor("");
-    setEmail("");
-    setText("");
-    setError(null);
-  };
+      onSubmit({
+        author: author.trim(),
+        email: email.trim(),
+        text: text.trim(),
+      });
+
+      setFormData({ author: "", email: "", text: "" });
+      setError(null);
+    },
+    [formData, onSubmit]
+  );
 
   return (
     <Box
@@ -61,42 +64,39 @@ export default function CommentForm({ onSubmit }: CommentFormProps) {
     >
       <TextField
         label="Имя"
-        value={author}
-        onChange={(e) => setAuthor(e.target.value)}
+        name="author"
+        value={formData.author}
+        onChange={handleChange}
         fullWidth
         variant="outlined"
       />
       <TextField
         label="Email"
+        name="email"
         type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        value={formData.email}
+        onChange={handleChange}
         fullWidth
         variant="outlined"
       />
       <TextField
         label="Комментарий"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
+        name="text"
+        value={formData.text}
+        onChange={handleChange}
         fullWidth
         multiline
         rows={4}
         variant="outlined"
       />
-      {error && (
-        <Alert severity="error" sx={{ mt: 1 }}>
-          {error}
-        </Alert>
-      )}
+      {error && <Alert severity="error">{error}</Alert>}
       <Button
         type="submit"
         variant="contained"
         sx={{
           mt: 2,
           bgcolor: "primary.main",
-          "&:hover": {
-            bgcolor: "primary.dark",
-          },
+          "&:hover": { bgcolor: "primary.dark" },
         }}
       >
         Отправить
